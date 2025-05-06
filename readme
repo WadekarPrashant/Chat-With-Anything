@@ -1,0 +1,115 @@
+# User Manual: RAG-powered Data Chat
+
+This application enables you to interact with various data sources—CSV files, documents (PDFs or web pages), and MongoDB collections—using natural language. Below are the steps to run the application and utilize its chat functionalities effectively.
+
+## Table of Contents
+1. [Running the Application](#running-the-application)
+2. [Configuration](#configuration)
+3. [CSV Analysis](#csv-analysis)
+4. [Document Q&A](#document-qa)
+5. [MongoDB Chat](#mongodb-chat)
+
+---
+
+## Running the Application
+To get started, you need to set up your environment and launch the app:
+
+1. **Install Prerequisites:**
+   - Ensure Python is installed on your system.
+   - Install the required libraries using pip:
+     ```bash
+     pip install req.txt
+     ```
+
+2. **Save and Run the Code:**
+   - Save the provided code in a file named `app.py`.
+   - Open a terminal, navigate to the directory containing `app.py`, and run:
+     ```bash
+     streamlit run app.py
+     ```
+   - The application will open in your default web browser.
+
+---
+
+## Configuration
+Configure the app via the sidebar once it’s running:
+
+1. **OpenAI API Key:**
+   - Enter your OpenAI API key in the text input field. This is required for the app to work.
+   - The key is saved locally for future sessions.
+
+2. **Model Selection:**
+   - Choose an OpenAI model from the dropdown: "gpt-4o", "gpt-3.5-turbo", or "gpt-4o-mini".
+
+3. **Temperature:**
+   - Adjust the temperature slider (0.0 to 1.0). Lower values produce more predictable responses, while higher values increase randomness.
+
+4. **Number of Examples:**
+   - Set the number of example questions (2 to 5) to generate for CSV Analysis and MongoDB Chat.
+
+---
+
+## CSV Analysis
+This tab lets you upload and query CSV files using natural language.
+
+### Steps:
+1. **Upload a CSV File:**
+   - Click the file uploader and select a CSV file.
+   - Optionally, add a dataset description in the text area.
+
+2. **View Data Preview:**
+   - See a preview of the first few rows and basic stats (rows, columns, missing values, memory usage).
+
+3. **Explore Example Questions:**
+   - The app generates example questions based on your data, shown in expandable sections with their pandas queries.
+
+4. **Ask a Question:**
+   - Type your question in the text area.
+   - Use suggested questions (if desired) by clicking them to auto-fill the input.
+   - Click "Submit Question" to process your query.
+
+5. **Review Results:**
+   - View the generated pandas code, query results, and a natural language explanation.
+   - Download results as a CSV file if applicable.
+
+---
+
+## Document Q&A
+Query the content of PDFs or web pages in this tab.
+
+### Steps:
+1. **Choose Input Type:**
+   - Select "Upload PDF" or "Enter URL" from the dropdown.
+
+2. **Process the Document:**
+   - **For PDF:** Upload a PDF file using the file uploader.
+   - **For URL:** Input a web address in the text field.
+   - The app processes the content for querying.
+
+3. **Ask a Question:**
+   - Enter your question in the text area.
+   - Click "Get Answer" to retrieve a response based on the document.
+
+---
+
+## MongoDB Chat
+Interact with MongoDB collections using natural language in this tab.
+
+### Steps:
+1. **Connect to MongoDB:**
+   - Enter the database name and collection name in the text fields.
+   - Click "Connect" to link to your MongoDB instance (assumes a local server at `mongodb://localhost:27017/`).
+
+2. **View Schema and Examples:**
+   - Check the collection’s schema and generated example questions with their MongoDB queries.
+
+3. **Ask a Question:**
+   - Type your question in the text area.
+   - Click "Submit" to process it.
+
+4. **Get the Answer:**
+   - The app uses similarity search to find relevant documents and provides an answer.
+
+---
+
+Follow these steps to run the application and leverage its chat features across CSV files, documents, and MongoDB collections. Enjoy exploring your data with natural language!
