@@ -862,7 +862,14 @@ def main() -> None:
         if st.button("Run Agent") and agent_question:
             with st.spinner("Agent thinking..."):
                 try:
-                    tools = [DuckDuckGoSearchRun()]
+                    try:
+                        tools = [DuckDuckGoSearchRun()]
+                    except Exception as e:
+                        st.error(
+                            f"Could not initialise DuckDuckGo search tool: {e}\n\n"
+                            "Make sure `duckduckgo-search` is installed: `pip install duckduckgo-search>=6.0.0`"
+                        )
+                        st.stop()
                     agent = create_react_agent(llm, tools, _react_prompt)
                     executor = AgentExecutor(
                         agent=agent,
