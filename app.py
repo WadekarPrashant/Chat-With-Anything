@@ -10,10 +10,9 @@ import streamlit as st
 from langchain_community.document_loaders import PyPDFLoader, WebBaseLoader
 from langchain_community.vectorstores import Chroma
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from langchain.chains import create_retrieval_chain, create_sql_query_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain_community.utilities import SQLDatabase
+from langchain_core.runnables import RunnablePassthrough
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -313,31 +312,21 @@ def get_natural_language_explanation(
         return f"Could not generate an explanation: {e}"
 
 
-def get_sql_explanation(llm: ChatOpenAI, question: str, sql: str, result: str) -> str:
-    """Return a plain-English answer to the user's question given the SQL result."""
-    prompt = (
-        f'A user asked: "{question}"\n\n'
-        f"The following SQL query was executed:\n```sql\n{sql}\n```\n\n"
-        f"It returned:\n{result}\n\n"
-        "Write a clear, concise answer in plain English. "
-        "Use bullet points for multiple values. "
-        "If the result is empty, say so and suggest why."
-    )
-    try:
-        resp = llm.invoke([SystemMessage(content=prompt)])
-        return resp.content
-    except Exception as e:
-        return f"Could not generate an explanation: {e}"
-
-
 def build_qa_chain(llm: ChatOpenAI, retriever):
-    """Build a LangChain LCEL retrieval-augmented QA chain."""
+    """Build a pure langchain_core LCEL retrieval-augmented QA chain."""
+    def format_docs(docs):
+        return "\n\n".join(doc.page_content for doc in docs)
+
     prompt = ChatPromptTemplate.from_messages([
         ("system", "Answer the question using only the context below.\n\n{context}"),
-        ("human", "{input}"),
+        ("human", "{question}"),
     ])
-    combine_docs_chain = create_stuff_documents_chain(llm, prompt)
-    return create_retrieval_chain(retriever, combine_docs_chain)
+    return (
+        {"context": retriever | format_docs, "question": RunnablePassthrough()}
+        | prompt
+        | llm
+        | StrOutputParser()
+    )
 
 
 # ──────────────────────────────────────────────────────────
@@ -458,8 +447,8 @@ def main() -> None:
         st.error(f"Error initialising LLM: {e}")
         return
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(
-        ["CSV Analysis", "Document Q&A", "MongoDB Chat", "Model Benchmark", "SQL Database"]
+    tab1, tab2, tab3, tab4 = st.tabs(
+        ["CSV Analysis", "Document Q&A", "MongoDB Chat", "Model Benchmark"]
     )
 
     # ── Tab 1: CSV Analysis ────────────────────────────────
@@ -569,7 +558,7 @@ def main() -> None:
             if st.button("Get Answer") and question:
                 with st.spinner("Generating answer..."):
                     try:
-                        answer = st.session_state.qa_chain.invoke({"input": question})["answer"]
+                        answer = st.session_state.qa_chain.invoke(question)
                         st.markdown("### Answer")
                         st.write(answer)
                     except Exception as e:
@@ -738,92 +727,6 @@ def main() -> None:
             showlegend=False,
         )
         st.plotly_chart(fig_params, use_container_width=True)
-
-
-    # ── Tab 5: SQL Database ────────────────────────────────
-    with tab5:
-        st.header("SQL Database Chat")
-        st.markdown(
-            "Connect to any SQLAlchemy-compatible database and ask questions in plain English. "
-            "Supports SQLite, PostgreSQL, MySQL, and more."
-        )
-
-        with st.expander("Connection Settings", expanded=True):
-            conn_string = st.text_input(
-                "Connection String",
-                placeholder="sqlite:///mydb.db  or  postgresql://user:pass@host/dbname",
-                type="password",
-            )
-            table_input = st.text_input(
-                "Table(s) to include (comma-separated; leave blank for all)",
-                placeholder="orders, customers",
-            )
-
-        if st.button("Connect to Database"):
-            if not conn_string:
-                st.warning("Please enter a connection string.")
-            else:
-                include_tables = (
-                    [t.strip() for t in table_input.split(",") if t.strip()]
-                    if table_input.strip()
-                    else None
-                )
-                try:
-                    db = SQLDatabase.from_uri(conn_string, include_tables=include_tables)
-                    # Eagerly fetch schema to surface errors at connect time
-                    _ = db.get_table_info()
-                    st.session_state.sql_db = db
-                    st.session_state.sql_connected = True
-                    tables = db.get_usable_table_names()
-                    st.success(f"Connected. Available tables: {', '.join(tables) or '(none found)'}")
-                except Exception as e:
-                    st.session_state.sql_connected = False
-                    st.error(f"Connection failed: {e}")
-
-        if st.session_state.get("sql_connected"):
-            db: SQLDatabase = st.session_state.sql_db
-
-            with st.expander("Database Schema"):
-                st.code(db.get_table_info(), language="sql")
-
-            st.markdown("---")
-            sql_question = st.text_area("Ask a question about your data", height=80)
-
-            if st.button("Run Query") and sql_question:
-                with st.spinner("Generating SQL and fetching results..."):
-                    # Step 1: generate SQL
-                    try:
-                        sql_chain = create_sql_query_chain(llm, db)
-                        raw_sql = sql_chain.invoke({"question": sql_question})
-                    except Exception as e:
-                        st.error(f"Failed to generate SQL: {e}")
-                        st.stop()
-
-                    # Strip markdown fences that some models wrap around the query
-                    sql_clean = raw_sql.strip()
-                    if sql_clean.startswith("```"):
-                        parts = sql_clean.split("```")
-                        sql_clean = parts[1]
-                        first_line, _, rest = sql_clean.partition("\n")
-                        sql_clean = rest.strip() if first_line.strip().lower() in ("sql", "") else sql_clean.strip()
-
-                    with st.expander("Generated SQL", expanded=True):
-                        st.code(sql_clean, language="sql")
-
-                    # Step 2: execute SQL
-                    try:
-                        result_str = db.run(sql_clean)
-                    except Exception as e:
-                        st.error(f"Query execution failed: {e}")
-                        st.stop()
-
-                    # Step 3: plain-English answer
-                    answer = get_sql_explanation(llm, sql_question, sql_clean, result_str)
-                    st.markdown("### Answer")
-                    st.markdown(answer)
-
-                    with st.expander("Raw Query Result"):
-                        st.text(result_str if result_str else "(no rows returned)")
 
 
 
