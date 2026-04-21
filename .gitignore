@@ -1,0 +1,12 @@
+# Environment
+.env
+
+# Python
+__pycache__/
+*.pyc
+
+# Vector store
+chroma_db/
+
+# App config (stores OpenAI API key locally)
+.config/
