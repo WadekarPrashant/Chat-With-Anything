@@ -27,6 +27,7 @@ pymongo>=4.0.0
 pandas>=2.0.0
 plotly>=5.0.0
 sqlalchemy>=2.0.0
+duckduckgo-search>=6.0.0
 
 # Optional: load env vars from a .env file
 python-dotenv>=1.0.0
