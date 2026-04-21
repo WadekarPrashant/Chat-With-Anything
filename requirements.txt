@@ -1,23 +1,23 @@
 # Core UI
 streamlit>=1.44.0
 
-# LangChain — pinned to a compatible 0.3.x set
-langchain==0.3.25
-langchain-core==0.3.57
-langchain-openai==0.3.16
-langchain-community==0.3.24
-langchain-text-splitters==0.3.8
+# LangChain — let pip resolve compatible versions
+langchain>=0.3.0
+langchain-core>=0.3.0
+langchain-openai>=0.2.0
+langchain-community>=0.3.0
+langchain-text-splitters>=0.3.0
 
-# OpenAI SDK (used by langchain-openai)
+# OpenAI SDK
 openai>=1.0.0
 
 # Vector store
-chromadb>=1.0.0
+chromadb>=0.4.0
 
-# PDF loader backend (required by PyPDFLoader)
+# PDF loader backend
 pypdf>=3.0.0
 
-# Web page loader backend (required by WebBaseLoader)
+# Web page loader backend
 beautifulsoup4>=4.12.0
 
 # MongoDB
