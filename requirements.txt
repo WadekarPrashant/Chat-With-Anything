@@ -1,12 +1,12 @@
 # Core UI
 streamlit>=1.44.0
 
-# LangChain — pinned to versions known to work together
-langchain==0.3.7
-langchain-core==0.3.15
-langchain-openai==0.2.9
-langchain-community==0.3.7
-langchain-text-splitters==0.3.3
+# LangChain — pinned to a compatible 0.3.x set
+langchain==0.3.24
+langchain-core>=0.3.0,<0.4
+langchain-openai>=0.2.9,<0.4
+langchain-community==0.3.24
+langchain-text-splitters>=0.3.3,<0.4
 
 # OpenAI SDK (used by langchain-openai)
 openai>=1.0.0
