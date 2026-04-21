@@ -10,11 +10,9 @@ import streamlit as st
 from langchain_community.document_loaders import PyPDFLoader, WebBaseLoader
 from langchain_community.vectorstores import Chroma
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
-from langchain.agents import AgentExecutor, create_react_agent
+from langchain_core.prompts import ChatPromptTemplate
 from langchain.chains import create_retrieval_chain, create_sql_query_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_community.utilities import SQLDatabase
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -460,8 +458,8 @@ def main() -> None:
         st.error(f"Error initialising LLM: {e}")
         return
 
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
-        ["CSV Analysis", "Document Q&A", "MongoDB Chat", "Model Benchmark", "SQL Database", "AI Agent"]
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(
+        ["CSV Analysis", "Document Q&A", "MongoDB Chat", "Model Benchmark", "SQL Database"]
     )
 
     # ── Tab 1: CSV Analysis ────────────────────────────────
@@ -827,82 +825,6 @@ def main() -> None:
                     with st.expander("Raw Query Result"):
                         st.text(result_str if result_str else "(no rows returned)")
 
-
-    # ── Tab 6: AI Agent ────────────────────────────────────
-    with tab6:
-        st.header("AI Agent")
-        st.markdown(
-            "Ask anything. The agent decides whether to search the web with **DuckDuckGo** "
-            "or answer from its own knowledge. Intermediate reasoning steps are shown below the answer."
-        )
-
-        # ReAct prompt defined inline — identical to hwchase17/react on LangChain Hub.
-        # Avoids a hub network call and keeps the app self-contained.
-        _REACT_TEMPLATE = (
-            "Answer the following questions as best you can. "
-            "You have access to the following tools:\n\n"
-            "{tools}\n\n"
-            "Use the following format:\n\n"
-            "Question: the input question you must answer\n"
-            "Thought: you should always think about what to do\n"
-            "Action: the action to take, should be one of [{tool_names}]\n"
-            "Action Input: the input to the action\n"
-            "Observation: the result of the action\n"
-            "... (this Thought/Action/Action Input/Observation can repeat N times)\n"
-            "Thought: I now know the final answer\n"
-            "Final Answer: the final answer to the original input question\n\n"
-            "Begin!\n\n"
-            "Question: {input}\n"
-            "Thought:{agent_scratchpad}"
-        )
-        _react_prompt = PromptTemplate.from_template(_REACT_TEMPLATE)
-
-        agent_question = st.text_area("Your question", height=80, key="agent_question_area")
-
-        if st.button("Run Agent") and agent_question:
-            with st.spinner("Agent thinking..."):
-                try:
-                    try:
-                        tools = [DuckDuckGoSearchRun()]
-                    except Exception as e:
-                        st.error(
-                            f"Could not initialise DuckDuckGo search tool: {e}\n\n"
-                            "Make sure `duckduckgo-search` is installed: `pip install duckduckgo-search>=6.0.0`"
-                        )
-                        st.stop()
-                    agent = create_react_agent(llm, tools, _react_prompt)
-                    executor = AgentExecutor(
-                        agent=agent,
-                        tools=tools,
-                        return_intermediate_steps=True,
-                        handle_parsing_errors=True,
-                        max_iterations=6,
-                    )
-                    result = executor.invoke({"input": agent_question})
-                except Exception as e:
-                    st.error(f"Agent error: {e}")
-                    st.stop()
-
-            # ── Final answer ───────────────────────────────
-            st.markdown("### Answer")
-            st.markdown(result.get("output", "*(no output)*"))
-
-            # ── Intermediate reasoning steps ───────────────
-            steps = result.get("intermediate_steps", [])
-            if steps:
-                with st.expander("Agent Reasoning", expanded=False):
-                    for i, (action, observation) in enumerate(steps, 1):
-                        st.markdown(f"**Step {i}**")
-                        # action.log contains the full Thought + Action + Action Input block
-                        log_text = action.log.strip()
-                        if log_text:
-                            st.markdown(f"```\n{log_text}\n```")
-                        st.markdown(f"**Observation:** {observation}")
-                        if i < len(steps):
-                            st.divider()
-            else:
-                with st.expander("Agent Reasoning", expanded=False):
-                    st.info("The agent answered from its own knowledge without using any tools.")
 
 
 if __name__ == "__main__":
