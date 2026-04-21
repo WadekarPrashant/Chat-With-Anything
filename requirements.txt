@@ -2,11 +2,11 @@
 streamlit>=1.44.0
 
 # LangChain — pinned to a compatible 0.3.x set
-langchain==0.3.24
-langchain-core>=0.3.0,<0.4
-langchain-openai>=0.2.9,<0.4
+langchain==0.3.25
+langchain-core==0.3.57
+langchain-openai==0.3.16
 langchain-community==0.3.24
-langchain-text-splitters>=0.3.3,<0.4
+langchain-text-splitters==0.3.8
 
 # OpenAI SDK (used by langchain-openai)
 openai>=1.0.0
