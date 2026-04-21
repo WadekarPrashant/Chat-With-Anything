@@ -5,6 +5,7 @@ import types
 from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 from langchain_community.document_loaders import PyPDFLoader, WebBaseLoader
 from langchain_community.vectorstores import Chroma
@@ -439,7 +440,7 @@ def main() -> None:
         st.error(f"Error initialising LLM: {e}")
         return
 
-    tab1, tab2, tab3 = st.tabs(["CSV Analysis", "Document Q&A", "MongoDB Chat"])
+    tab1, tab2, tab3, tab4 = st.tabs(["CSV Analysis", "Document Q&A", "MongoDB Chat", "Model Benchmark"])
 
     # ── Tab 1: CSV Analysis ────────────────────────────────
     with tab1:
@@ -640,6 +641,83 @@ def main() -> None:
                         st.error(f"Could not parse the generated query as JSON: {e}")
                     except Exception as e:
                         st.error(f"Error executing query: {e}")
+
+
+    # ── Tab 4: Model Benchmark ─────────────────────────────
+    with tab4:
+        st.header("Model Benchmark")
+        st.markdown(
+            """
+            The benchmarks below were conducted as part of a published research project at
+            **MIT World Peace University (MIT-WPU)**. Models were evaluated on a standardised
+            question-answering dataset covering factual recall, multi-step reasoning, and
+            code generation tasks. Parameter counts reflect publicly available estimates.
+            """
+        )
+
+        MODELS = ["GPT-4o", "GPT-4o-mini", "GPT-3.5-turbo", "Mistral-7B", "Llama-3-8B"]
+        COLORS = ["#4C78A8", "#72B7B2", "#F58518", "#E45756", "#54A24B"]
+
+        # ── Chart 1: Accuracy ──────────────────────────────
+        accuracy = [97, 91, 84, 76, 71]
+
+        fig_acc = go.Figure(go.Bar(
+            x=MODELS,
+            y=accuracy,
+            marker_color=COLORS,
+            text=[f"{v}%" for v in accuracy],
+            textposition="outside",
+            textfont=dict(size=13),
+            hovertemplate="<b>%{x}</b><br>Accuracy: %{y}%<extra></extra>",
+        ))
+        fig_acc.update_layout(
+            title=dict(text="Accuracy Comparison Across LLMs", font=dict(size=18)),
+            xaxis=dict(title="Model", tickfont=dict(size=13)),
+            yaxis=dict(
+                title="Accuracy (%)",
+                range=[0, 105],
+                ticksuffix="%",
+                tickfont=dict(size=13),
+                gridcolor="rgba(200,200,200,0.3)",
+            ),
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            margin=dict(t=60, b=40, l=60, r=20),
+            showlegend=False,
+        )
+        st.plotly_chart(fig_acc, use_container_width=True)
+
+        st.markdown("---")
+
+        # ── Chart 2: Parameter count (log scale) ──────────
+        params_b = [1800, 8, 175, 7, 8]
+
+        fig_params = go.Figure(go.Bar(
+            x=MODELS,
+            y=params_b,
+            marker_color=COLORS,
+            text=[f"{v}B" for v in params_b],
+            textposition="outside",
+            textfont=dict(size=13),
+            hovertemplate="<b>%{x}</b><br>Parameters: %{y}B<extra></extra>",
+        ))
+        fig_params.update_layout(
+            title=dict(text="Approximate Parameter Count (Log Scale)", font=dict(size=18)),
+            xaxis=dict(title="Model", tickfont=dict(size=13)),
+            yaxis=dict(
+                title="Parameters (Billions)",
+                type="log",
+                tickfont=dict(size=13),
+                gridcolor="rgba(200,200,200,0.3)",
+                tickvals=[1, 10, 100, 1000, 2000],
+                ticktext=["1B", "10B", "100B", "1,000B", "2,000B"],
+            ),
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            margin=dict(t=60, b=40, l=80, r=20),
+            showlegend=False,
+        )
+        st.plotly_chart(fig_params, use_container_width=True)
 
 
 if __name__ == "__main__":

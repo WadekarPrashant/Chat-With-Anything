@@ -25,6 +25,7 @@ pymongo>=4.0.0
 
 # Data
 pandas>=2.0.0
+plotly>=5.0.0
 
 # Optional: load env vars from a .env file
 python-dotenv>=1.0.0
